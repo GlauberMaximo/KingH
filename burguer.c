@@ -38,21 +38,31 @@ int main(){
                             // Use strcpy para copiar a string "Mini King" para b1
                             strcpy(b1, "Mini King");
                             printf("Você selecionou: %s\n", b1);
-                            printf("");
+                            printf("Voltando ao painel central...");
                             break;
                         case 2:
-
+                            printf("Prince Burguer\n");
+                            // Use strcpy para copiar a string "Mini King" para b1
+                            strcpy(b2, "Prince Burguer");
+                            printf("Você selecionou: %s\n", b2);
+                            printf("Voltando ao painel central...");
                             break;
                         case 3:
-
+                            printf("King Supremo\n");
+                            // Use strcpy para copiar a string "Mini King" para b1
+                            strcpy(b1, "King Supremo");
+                            printf("Você selecionou: %s\n", b3);
+                            printf("Voltando ao painel central...");
                             break;
                         case 4:
-                            c1 = 'n';
+                            c1 = 's'; // OBS: Fazer essa parte voltar ao menu de seleção de hamburgueres
                             printf("Voltando...\n");
                             break;
                         default:
                             printf("Opcao Inválida");
                     }
+
+                    return 0;
                 }
                 
 
