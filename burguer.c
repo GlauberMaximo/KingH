@@ -1,457 +1,419 @@
-#include <stdio.h>
-#include <string.h>
-#include <stdbool.h>
+#include<stdio.h> // funções de entrada e saida
+#include<string.h> // Pra mexer com textos (palavras e frases)
+#include<stdbool.h> // 'true' e 'false'
 
-// --- Definição da Estrutura para um Item do Carrinho ---
+// ficha para guardar os itens que vai colocoar no carrinho
 typedef struct {
-    char nome[100];
-    char tamanho[50]; // Para bebidas (ex: "310ml") ou batatas (ex: "Pequena"). Vazio para hambúrgueres.
-    float valor_unitario;
-    int quantidade;
-    float valor_total_item; // valor_unitario * quantidade
-} ItemCarrinho;
+    char nome[100]; // O nome do item
+    char tamanho[50]; // O tamanho do item, se não tiver, fica vazio.
+    float preco_unitario; // Quanto custa uma unidade desse item
+    int quantidade; // Quantos desse item a gente quer
+    float preco_total_do_item; // o preco_unitario * quantidade
+} ItemDoCarrinho; // Nome da ficha
 
-// --- Constantes para o Tamanho Máximo do Carrinho ---
-#define MAX_ITENS_CARRINHO 50 // Capacidade máxima de itens diferentes no carrinho
+// --- Limites do nosso carrinho ---
+#define MAXIMO_ITENS_NO_CARRINHO 50
 
-// --- Variáveis Globais para o Carrinho e Status do Pedido ---
-ItemCarrinho carrinho[MAX_ITENS_CARRINHO]; // O array que guarda todos os itens adicionados
-int num_itens_carrinho = 0;              // Contador de itens atualmente no carrinho
-
-// Constantes de valores fixos
-const float TAXA_SERVICO = 5.90;
-const float VALOR_DESCONTO_MINIMO = 100.00;
-const float PORCENTAGEM_DESCONTO = 0.20; // 20%
-
-// --- Variáveis Globais para Confirmação do Pedido e Resumo Final ---
-bool pedido_confirmado = false; // Indica se a compra foi finalizada
-
-// Array para guardar o estado do pedido no momento da confirmação (cópia do carrinho)
-ItemCarrinho pedido_final[MAX_ITENS_CARRINHO];
-int num_itens_pedido_final = 0; // Contador de itens no pedido final
-float pedido_final_subtotal = 0.0;
-float pedido_final_servico = 0.0;
-float pedido_final_desconto = 0.0;
-float pedido_final_total = 0.0;
-
-
-// --- Função para limpar o buffer de entrada ---
-void limpar_buffer() {
-    while (getchar() != '\n' && getchar() != EOF);
-}
-
-// --- Função para adicionar um item ao carrinho ---
-void adicionar_item_carrinho(const char* nome, const char* tamanho, float valor_unitario, int qtd) {
-    if (num_itens_carrinho < MAX_ITENS_CARRINHO) {
-        strcpy(carrinho[num_itens_carrinho].nome, nome);
-        strcpy(carrinho[num_itens_carrinho].tamanho, tamanho);
-        carrinho[num_itens_carrinho].valor_unitario = valor_unitario;
-        carrinho[num_itens_carrinho].quantidade = qtd;
-        carrinho[num_itens_carrinho].valor_total_item = valor_unitario * qtd;
-        
-        num_itens_carrinho++;
-        printf("Item Adicionado: %d x %s %s (Total: R$ %.2f).\n", qtd, nome, (strlen(tamanho) > 0 ? tamanho : ""), (valor_unitario * qtd));
-    } else {
-        printf("Carrinho cheio! Não é possível adicionar mais itens (limite de %d itens diferentes).\n", MAX_ITENS_CARRINHO);
-    }
-    pedido_confirmado = false; // Invalida o pedido confirmado anterior ao adicionar novo item
-}
-
-// --- Função para calcular o subtotal atual do carrinho ---
-float calcular_subtotal_carrinho() {
-    float subtotal = 0.0;
-    for (int i = 0; i < num_itens_carrinho; i++) {
-        subtotal += carrinho[i].valor_total_item;
-    }
-    return subtotal;
-}
-
-// --- Função para exibir os detalhes do carrinho/pedido ---
-void exibir_carrinho_detalhes(bool eh_pedido_final) {
-    ItemCarrinho* lista_itens;
-    int num_itens;
-
-    if (eh_pedido_final) {
-        lista_itens = pedido_final;
-        num_itens = num_itens_pedido_final;
-    } else {
-        lista_itens = carrinho;
-        num_itens = num_itens_carrinho;
+// Função para mostrar tudo o que tem no carrinho
+void mostrar_itens(ItemDoCarrinho* lista_de_itens, int quantos_itens_tem) {
+    if (quantos_itens_tem == 0) { // Se não tiver nada na lista
+        printf("Não tem nada pra mostrar aqui.\n");
+        return; // Sai da função
     }
 
-    if (num_itens == 0) {
-        printf("Nenhum item para exibir.\n");
-        return;
-    }
-
-    for (int i = 0; i < num_itens; i++) {
-        printf("- %d x %s", lista_itens[i].quantidade, lista_itens[i].nome);
-        if (strlen(lista_itens[i].tamanho) > 0) {
-            printf(" %s", lista_itens[i].tamanho);
+    // Mostra cada item da lista
+    for (int i = 0; i < quantos_itens_tem; i++) {
+        printf("- %d x %s", lista_de_itens[i].quantidade, lista_de_itens[i].nome);
+        // Se tiver tamanho, mostra o tamanho
+        if (strlen(lista_de_itens[i].tamanho) > 0) {
+            printf(" %s", lista_de_itens[i].tamanho);
         }
-        printf(" (R$ %.2f)\n", lista_itens[i].valor_total_item);
+        printf(" (R$ %.2f)\n", lista_de_itens[i].preco_total_do_item);
     }
 }
-
-// --- Função para limpar todo o carrinho ---
-void limpar_carrinho_completo() {
-    num_itens_carrinho = 0;
-    // Não alteramos pedido_confirmado aqui, pois limpar o carrinho atual não afeta o pedido já confirmado.
-    // Ele só seria invalidado se novos itens fossem adicionados ao carrinho.
-    printf("Carrinho limpo.\n");
-}
-
-
 int main(){
-    // Valores unitários dos hamburgueres
-    const float V_MINI_KING = 10.90;
-    const float V_PRINCE_BURGUER = 16.99;
-    const float V_KING_SUPREMO = 22.99;
+    // Onde a gente guarda as coisas do carrinho
+    ItemDoCarrinho meu_carrinho[MAXIMO_ITENS_NO_CARRINHO]; // Aqui é onde a gente vai guardar as fichas dos itens
+    int total_de_itens_no_carrinho = 0; // Quantos itens diferentes já estão no carrinho
 
-    // Valores unitários para Batatas
-    const float V_BATATA_PEQUENA = 6.90;
-    const float V_BATATA_MEDIA = 11.99;
-    const float V_BATATA_GRANDE = 16.99;
+    // Valores de taxas
+    float TAXA_DE_ENTREGA = 5.90; // Um valor fixo pro serviço de entrega
+    float VALOR_PRA_TER_DESCONTO = 100.00; // Se o pedido for maior que isso, tem desconto
+    float PORCENTAGEM_DO_DESCONTO = 0.10; // O desconto é de 10% (0.10 é o mesmo que 10%)
+    // Preços dos hamburgueres 
+    float PRECO_MINI_KING = 10.90;
+    float PRECO_PRINCE_BURGUER = 16.99;
+    float PRECO_KING_SUPREMO = 22.99;
+    // Preços das batatas
+    float PRECO_BATATA_PEQUENA = 6.90;
+    float PRECO_BATATA_MEDIA = 11.99;
+    float PRECO_BATATA_GRANDE = 16.99;
+    // Preços das bebidas
+    float PRECO_REFRI_LATA = 4.90;
+    float PRECO_REFRI_600ML = 6.49;
+    float PRECO_REFRI_2LITROS = 12.99;
 
-    // Valores unitários para Bebidas por tipo e tamanho
-    const float V_COCA_LATA = 4.90;
-    const float V_COCA_600ML = 6.49;
-    const float V_COCA_2LITROS = 12.99;
-    const float V_PEPSI_LATA = 4.90;
-    const float V_PEPSI_600ML = 6.49;
-    const float V_PEPSI_2LITROS = 12.99;
-    const float V_GUARANA_LATA = 4.90;
-    const float V_GUARANA_600ML = 6.49;
-    const float V_GUARANA_2LITROS = 12.99;
+    // Variáveis que vamos usar para guardar coisas temporariamente
+    char nome_do_item_temporario[100]; // Pra guardar o nome do item que o usuário escolher
+    char tamanho_do_item_temporario[50]; // Pra guardar o tamanho
+    float preco_unitario_temporario; // Pra guardar o preço de uma unidade
 
-    // Variáveis locais para uso temporário
-    char temp_nome_item[100];
-    char temp_tamanho_item[50];
-    float temp_valor_unitario;
+    int quantidade_digitada; // Pra guardar a quantidade que o usuário digitar
+    char continuar_no_menu_principal = 's'; // Começa como 's' pra entrar no loop principal
+    char continuar_no_submenu; // Pra controlar os submenus
+    int escolha_menu_principal, escolha_cardapio, escolha_item, escolha_tamanho_bebida, escolha_carrinho;
+    int escolha_forma_pagamento; // Pra guardar a escolha da forma de pagamento
+    char nome_forma_pagamento[50]; // Pra guardar o nome da forma de pagamento
 
-    int qtd;
-    char c1 = 's';
-    char c_submenu;
-    int op_principal, op_cardapio, op_item, op_tamanho_bebida, op_carrinho;
-
-    while (c1 == 's'){
+    // Menu Principal
+    while (continuar_no_menu_principal == 's'){
         printf("\n--- Bem-vindo ao King Burguers ---\n");
-        printf("1 - Acessar Cardapio\n");
-        printf("2 - Visualizar Carrinho\n");
-        printf("3 - Visualizar Pedido\n");
-        printf("4 - Fechar sistema\n");
+        printf("1 - Ver o Cardapio\n");
+        printf("2 - Ver meu Carrinho\n");
+        printf("3 - Sair do Sistema\n");
         printf("-----------------------------------\n");
-        printf("Escolha uma opção: ");
-        scanf("%d", &op_principal);
-        limpar_buffer();
-
+        printf("O que você quer fazer? Digite o número: ");
+        scanf("%d", &escolha_menu_principal);
         printf("-----------------------------------\n");
-        
-        switch (op_principal){
-            case 1: // Acessar Cardapio
-                c_submenu = 's';
-                while (c_submenu == 's'){
-                    printf("\n--- Cardapio King Burguers ---\n");
-                    printf("1 - Hamburguers\n");
-                    printf("2 - Batata\n");
+        switch (escolha_menu_principal){
+            case 1: // Ver o Cardapio
+                continuar_no_submenu = 's';
+                // Menu do cardápio
+                while (continuar_no_submenu == 's'){
+                    printf("\n--- Cardapio do King Burguers ---\n");
+                    printf("1 - Hamburgueres\n");
+                    printf("2 - Batatas\n");
                     printf("3 - Bebidas\n");
-                    printf("4 - Voltar ao Menu Principal\n");
+                    printf("4 - Voltar pro Menu Principal\n");
                     printf("-----------------------------------\n");
-                    printf("Escolha uma categoria: ");
-                    scanf("%d", &op_cardapio);
-                    limpar_buffer();
+                    printf("Escolha o que você quer ver no cardápio: ");
+                    scanf("%d", &escolha_cardapio);
 
-                    switch (op_cardapio){
-                        case 1: // Menu de Hamburguers
-                            printf("\n--- Opções de Hamburguers ---\n");
+                    switch (escolha_cardapio){
+                        case 1: // Menu de Hamburgueres
+                            printf("\n--- Nossos Hamburgueres --- \n");
                             printf("1 - Mini King\n");
                             printf("    Ingredientes: Pão tradicional, hambúrguer de carne 80g, queijo cheddar e maionese.\n");
-                            printf("    Valor: R$ %.2f\n", V_MINI_KING);
+                            printf("    Preço: R$ %.2f\n", PRECO_MINI_KING);
                             printf("2 - Prince Burguer\n");
                             printf("    Ingredientes: Pão brioche, hambúrguer de carne 120g, queijo prato, alface, tomate e molho especial.\n");
-                            printf("    Valor: R$ %.2f\n", V_PRINCE_BURGUER);
+                            printf("    Preço: R$ %.2f\n", PRECO_PRINCE_BURGUER);
                             printf("3 - King Supremo \n");
                             printf("    Ingredientes: Pão australiano, dois hambúrgueres de carne 120g, queijo mussarela, bacon, cebola e maionese.\n");
-                            printf("    Valor: R$ %.2f\n", V_KING_SUPREMO);
+                            printf("    Preço: R$ %.2f\n", PRECO_KING_SUPREMO);
                             printf("4 - Voltar\n");
                             printf("-----------------------------------\n");
-                            printf("Escolha um hamburguer: ");
-                            scanf("%d", &op_item);
-                            limpar_buffer();
+                            printf("Escolha qual hamburguer você quer: ");
+                            scanf("%d", &escolha_item);
 
-                            temp_valor_unitario = 0.0;
-                            strcpy(temp_tamanho_item, "");
+                            preco_unitario_temporario = 0.0; // Zera o preço temporário
+                            strcpy(tamanho_do_item_temporario, ""); // Deixa o tamanho vazio
 
-                            switch (op_item){
+                            switch (escolha_item){
                                 case 1:
-                                    strcpy(temp_nome_item, "Mini King");
-                                    temp_valor_unitario = V_MINI_KING;
+                                    strcpy(nome_do_item_temporario, "Mini King");
+                                    preco_unitario_temporario = PRECO_MINI_KING;
                                     break;
                                 case 2:
-                                    strcpy(temp_nome_item, "Prince Burguer");
-                                    temp_valor_unitario = V_PRINCE_BURGUER;
+                                    strcpy(nome_do_item_temporario, "Prince Burguer");
+                                    preco_unitario_temporario = PRECO_PRINCE_BURGUER;
                                     break;
                                 case 3:
-                                    strcpy(temp_nome_item, "King Supremo");
-                                    temp_valor_unitario = V_KING_SUPREMO;
+                                    strcpy(nome_do_item_temporario, "King Supremo");
+                                    preco_unitario_temporario = PRECO_KING_SUPREMO;
                                     break;
-                                case 4:
-                                    printf("Voltando ao Cardápio King Burguers...\n");
-                                    continue;
+                                case 4: // Volta ao cardápio
+                                    printf("Voltando para as categorias do Cardápio...\n");
+                                    continue; // Volta pro menu do cardápio
                                 default:
-                                    printf("Opcao Inválida. Tente novamente.\n");
-                                    continue;
+                                    printf("Opção Inválida. Por favor, tente de novo.\n");
+                                    continue; // Volta pro menu dos hamburgueres
                             }
                             
-                            if (temp_valor_unitario > 0) {
-                                printf("Qual a quantidade desejada de %s?\n", temp_nome_item);
-                                scanf("%d", &qtd);
-                                limpar_buffer();
-                                if (qtd > 0) {
-                                    adicionar_item_carrinho(temp_nome_item, temp_tamanho_item, temp_valor_unitario, qtd);
+                            // Se o preço for maior que zero (quer dizer que escolheu um item válido)
+                            if (preco_unitario_temporario > 0) {
+                                printf("Quantos %s você quer?\n", nome_do_item_temporario);
+                                scanf("%d", &quantidade_digitada);
+                                if (quantidade_digitada > 0) { // Se a quantidade for válida
+                                    if (total_de_itens_no_carrinho < MAXIMO_ITENS_NO_CARRINHO) {
+                                        strcpy(meu_carrinho[total_de_itens_no_carrinho].nome, nome_do_item_temporario);
+                                        strcpy(meu_carrinho[total_de_itens_no_carrinho].tamanho, tamanho_do_item_temporario);
+                                        meu_carrinho[total_de_itens_no_carrinho].preco_unitario = preco_unitario_temporario;
+                                        meu_carrinho[total_de_itens_no_carrinho].quantidade = quantidade_digitada;
+                                        meu_carrinho[total_de_itens_no_carrinho].preco_total_do_item = preco_unitario_temporario * quantidade_digitada;
+                                        
+                                        total_de_itens_no_carrinho++;
+                                        printf("Você adicionou: %d x %s %s (Custa: R$ %.2f).\n", quantidade_digitada, nome_do_item_temporario, (strlen(tamanho_do_item_temporario) > 0 ? tamanho_do_item_temporario : ""), (preco_unitario_temporario * quantidade_digitada));
+                                    } else {
+                                        printf("O carrinho está lotado! Não dá pra adicionar mais itens (só cabem %d tipos de itens).\n", MAXIMO_ITENS_NO_CARRINHO);
+                                    }
                                 } else {
-                                    printf("Quantidade inválida. Item não adicionado.\n");
+                                    printf("Quantidade inválida. O item não foi adicionado.\n");
                                 }
                                 printf("Voltando ao cardápio...\n");
                             }
                             break; 
                         
                         case 2: // Menu de Batatas
-                            printf("\n--- Opções de Batatas ---\n");
+                            printf("\n--- Nossas Batatas --- \n");
                             printf("1 - Batata Frita Pequena\n");
-                            printf("    Valor: R$ %.2f\n", V_BATATA_PEQUENA);
+                            printf("    Preço: R$ %.2f\n", PRECO_BATATA_PEQUENA);
                             printf("2 - Batata Frita Media\n");
-                            printf("    Valor: R$ %.2f\n", V_BATATA_MEDIA);
+                            printf("    Preço: R$ %.2f\n", PRECO_BATATA_MEDIA);
                             printf("3 - Batata Frita Grande\n");
-                            printf("    Valor: R$ %.2f\n", V_BATATA_GRANDE);
+                            printf("    Preço: R$ %.2f\n", PRECO_BATATA_GRANDE);
                             printf("4 - Voltar\n");
                             printf("-----------------------------------\n");
                             printf("Escolha o tamanho da batata: ");
-                            scanf("%d", &op_item);
-                            limpar_buffer();
+                            scanf("%d", &escolha_item);
 
-                            temp_valor_unitario = 0.0;
-                            strcpy(temp_nome_item, "Batata Frita");
+                            preco_unitario_temporario = 0.0;
+                            strcpy(nome_do_item_temporario, "Batata Frita"); // O nome base é sempre "Batata Frita"
                             
-                            switch (op_item){
+                            switch (escolha_item){
                                 case 1:
-                                    temp_valor_unitario = V_BATATA_PEQUENA;
-                                    strcpy(temp_tamanho_item, "Pequena");
+                                    preco_unitario_temporario = PRECO_BATATA_PEQUENA;
+                                    strcpy(tamanho_do_item_temporario, "Pequena");
                                     break;
                                 case 2:
-                                    temp_valor_unitario = V_BATATA_MEDIA;
-                                    strcpy(temp_tamanho_item, "Media");
+                                    preco_unitario_temporario = PRECO_BATATA_MEDIA;
+                                    strcpy(tamanho_do_item_temporario, "Media");
                                     break;
                                 case 3:
-                                    temp_valor_unitario = V_BATATA_GRANDE;
-                                    strcpy(temp_tamanho_item, "Grande");
+                                    preco_unitario_temporario = PRECO_BATATA_GRANDE;
+                                    strcpy(tamanho_do_item_temporario, "Grande");
                                     break;
-                                case 4:
-                                    printf("Voltando ao Cardápio King Burguers...\n");
-                                    continue;
+                                case 4: // Volta ao cardápio
+                                    printf("Voltando para as categorias do Cardápio...\n");
+                                    continue; // Volta pro menu do cardápio
                                 default:
-                                    printf("Opcao Inválida. Tente novamente.\n");
+                                    printf("Opção Inválida. Por favor, tente de novo.\n");
                                     continue;
                             }
 
-                            if (temp_valor_unitario > 0) {
-                                printf("Qual a quantidade desejada de Batata Frita %s?\n", temp_tamanho_item);
-                                scanf("%d", &qtd);
-                                limpar_buffer();
-                                if (qtd > 0) {
-                                    adicionar_item_carrinho(temp_nome_item, temp_tamanho_item, temp_valor_unitario, qtd);
+                            if (preco_unitario_temporario > 0) {
+                                printf("Quantas Batatas Fritas %s você quer?\n", tamanho_do_item_temporario);
+                                scanf("%d", &quantidade_digitada);
+                                if (quantidade_digitada > 0) {
+                                    if (total_de_itens_no_carrinho < MAXIMO_ITENS_NO_CARRINHO) {
+                                        strcpy(meu_carrinho[total_de_itens_no_carrinho].nome, nome_do_item_temporario);
+                                        strcpy(meu_carrinho[total_de_itens_no_carrinho].tamanho, tamanho_do_item_temporario);
+                                        meu_carrinho[total_de_itens_no_carrinho].preco_unitario = preco_unitario_temporario;
+                                        meu_carrinho[total_de_itens_no_carrinho].quantidade = quantidade_digitada;
+                                        meu_carrinho[total_de_itens_no_carrinho].preco_total_do_item = preco_unitario_temporario * quantidade_digitada;
+                                        
+                                        total_de_itens_no_carrinho++;
+                                        printf("Você adicionou: %d x %s %s (Custa: R$ %.2f).\n", quantidade_digitada, nome_do_item_temporario, tamanho_do_item_temporario, (preco_unitario_temporario * quantidade_digitada));
+                                    } else {
+                                        printf("O carrinho está lotado! Não dá pra adicionar mais itens (só cabem %d tipos de itens).\n", MAXIMO_ITENS_NO_CARRINHO);
+                                    }
                                 } else {
-                                    printf("Quantidade inválida. Item não adicionado.\n");
+                                    printf("Quantidade inválida. O item não foi adicionado.\n");
                                 }
                                 printf("Voltando ao cardápio...\n");
                             }
                             break;
                             
                         case 3: // Menu de Bebidas
-                            printf("\n--- Opções de Bebidas ---\n");
+                            printf("\n--- Nossas Bebidas ---\n");
                             printf("1 - Coca-Cola\n");
-                            printf("    Tamanhos: 310 ml (R$ %.2f), 600 ml (R$ %.2f), 2 Litros (R$ %.2f)\n", V_COCA_LATA, V_COCA_600ML, V_COCA_2LITROS);
                             printf("2 - Pepsi\n");
-                            printf("    Tamanhos: 310 ml (R$ %.2f), 600 ml (R$ %.2f), 2 Litros (R$ %.2f)\n", V_PEPSI_LATA, V_PEPSI_600ML, V_PEPSI_2LITROS);
                             printf("3 - Guaraná Antartica\n");
-                            printf("    Tamanhos: 310 ml (R$ %.2f), 600 ml (R$ %.2f), 2 Litros (R$ %.2f)\n", V_GUARANA_LATA, V_GUARANA_600ML, V_GUARANA_2LITROS);
                             printf("4 - Voltar\n");
                             printf("-----------------------------------\n");
                             printf("Escolha uma bebida: ");
-                            scanf("%d", &op_item);
-                            limpar_buffer();
+                            scanf("%d", &escolha_item);
 
-                            temp_valor_unitario = 0.0;
-                            strcpy(temp_tamanho_item, "");
+                            preco_unitario_temporario = 0.0;
+                            strcpy(tamanho_do_item_temporario, "");
 
-                            if (op_item >= 1 && op_item <= 3) {
-                                if (op_item == 1) strcpy(temp_nome_item, "Coca-Cola");
-                                else if (op_item == 2) strcpy(temp_nome_item, "Pepsi");
-                                else strcpy(temp_nome_item, "Guaraná Antartica");
+                            if (escolha_item >= 1 && escolha_item <= 3) {
+                                if (escolha_item == 1) strcpy(nome_do_item_temporario, "Coca-Cola");//if reduzido
+                                else if (escolha_item == 2) strcpy(nome_do_item_temporario, "Pepsi");//elseif reduzido
+                                else strcpy(nome_do_item_temporario, "Guaraná Antartica");//else reduzido
 
-                                printf("\nVocê selecionou %s.\n", temp_nome_item);
-                                printf("--- Escolha o Tamanho para %s ---\n", temp_nome_item);
-                                printf("1 - Lata (310ml) - R$ %.2f\n", (op_item == 1 ? V_COCA_LATA : (op_item == 2 ? V_PEPSI_LATA : V_GUARANA_LATA)));
-                                printf("2 - 600ml - R$ %.2f\n", (op_item == 1 ? V_COCA_600ML : (op_item == 2 ? V_PEPSI_600ML : V_GUARANA_600ML)));
-                                printf("3 - 2 Litros - R$ %.2f\n", (op_item == 1 ? V_COCA_2LITROS : (op_item == 2 ? V_PEPSI_2LITROS : V_GUARANA_2LITROS)));
+                                printf("\nVocê escolheu %s.\n", nome_do_item_temporario);
+                                printf("--- Escolha o Tamanho para %s ---\n", nome_do_item_temporario);
+                                printf("1 - Lata (310ml) - R$ %.2f\n", PRECO_REFRI_LATA);
+                                printf("2 - 600ml - R$ %.2f\n", PRECO_REFRI_600ML);
+                                printf("3 - 2 Litros - R$ %.2f\n", PRECO_REFRI_2LITROS);
                                 printf("4 - Voltar para escolha de bebida\n");
                                 printf("-----------------------------------\n");
                                 printf("Escolha o tamanho: ");
-                                scanf("%d", &op_tamanho_bebida);
-                                limpar_buffer();
+                                scanf("%d", &escolha_tamanho_bebida);
                                 
-                                switch (op_tamanho_bebida){
+                                switch (escolha_tamanho_bebida){
                                     case 1:
-                                        temp_valor_unitario = (op_item == 1 ? V_COCA_LATA : (op_item == 2 ? V_PEPSI_LATA : V_GUARANA_LATA));
-                                        strcpy(temp_tamanho_item, "310ml");
+                                        preco_unitario_temporario = PRECO_REFRI_LATA;
+                                        strcpy(tamanho_do_item_temporario, "310ml");
                                         break;
                                     case 2:
-                                        temp_valor_unitario = (op_item == 1 ? V_COCA_600ML : (op_item == 2 ? V_PEPSI_600ML : V_GUARANA_600ML));
-                                        strcpy(temp_tamanho_item, "600ml");
+                                        preco_unitario_temporario = PRECO_REFRI_600ML;
+                                        strcpy(tamanho_do_item_temporario, "600ml");
                                         break;
                                     case 3:
-                                        temp_valor_unitario = (op_item == 1 ? V_COCA_2LITROS : (op_item == 2 ? V_PEPSI_2LITROS : V_GUARANA_2LITROS));
-                                        strcpy(temp_tamanho_item, "2 Litros");
+                                        preco_unitario_temporario = PRECO_REFRI_2LITROS;
+                                        strcpy(tamanho_do_item_temporario, "2 Litros");
                                         break;
                                     case 4:
-                                        printf("Voltando às opções de bebidas...\n");
+                                        printf("Voltando para as opções de bebidas...\n");
                                         continue;
                                     default:
-                                        printf("Opcao de tamanho inválida.\n");
+                                        printf("Opção de tamanho inválida.\n");
                                         continue;
                                 }
                                 
-                                if (temp_valor_unitario > 0) {
-                                    printf("Qual a quantidade desejada de %s %s?\n", temp_nome_item, temp_tamanho_item);
-                                    scanf("%d", &qtd);
-                                    limpar_buffer();
-                                    if (qtd > 0) {
-                                        adicionar_item_carrinho(temp_nome_item, temp_tamanho_item, temp_valor_unitario, qtd);
+                                if (preco_unitario_temporario > 0) {
+                                    printf("Quantas %s %s você quer?\n", nome_do_item_temporario, tamanho_do_item_temporario);
+                                    scanf("%d", &quantidade_digitada);
+                                    if (quantidade_digitada > 0) {
+                                        if (total_de_itens_no_carrinho < MAXIMO_ITENS_NO_CARRINHO) {
+                                            strcpy(meu_carrinho[total_de_itens_no_carrinho].nome, nome_do_item_temporario);
+                                            strcpy(meu_carrinho[total_de_itens_no_carrinho].tamanho, tamanho_do_item_temporario);
+                                            meu_carrinho[total_de_itens_no_carrinho].preco_unitario = preco_unitario_temporario;
+                                            meu_carrinho[total_de_itens_no_carrinho].quantidade = quantidade_digitada;
+                                            meu_carrinho[total_de_itens_no_carrinho].preco_total_do_item = preco_unitario_temporario * quantidade_digitada;
+                                            
+                                            total_de_itens_no_carrinho++;
+                                            printf("Você adicionou: %d x %s %s (Custa: R$ %.2f).\n", quantidade_digitada, nome_do_item_temporario, tamanho_do_item_temporario, (preco_unitario_temporario * quantidade_digitada));
+                                        } else {
+                                            printf("O carrinho está lotado! Não dá pra adicionar mais itens (só cabem %d tipos de itens).\n", MAXIMO_ITENS_NO_CARRINHO);
+                                        }
                                     } else {
-                                        printf("Quantidade inválida. Item não adicionado.\n");
+                                        printf("Quantidade inválida. O item não foi adicionado.\n");
                                     }
                                     printf("Voltando ao cardápio...\n");
                                 }
 
-                            } else if (op_item == 4) {
-                                printf("Voltando ao Cardápio King Burguers...\n");
+                            } else if (escolha_item == 4) {
+                                printf("Voltando para as categorias do Cardápio...\n");
                             } else {
-                                printf("Opcao Inválida. Tente novamente.\n");
+                                printf("Opção Inválida. Por favor, tente de novo.\n");
                             }
                             break;
 
                         case 4: // Voltar ao Menu Principal (do Cardápio)
-                            printf("Voltando ao Menu Principal...\n");
-                            c_submenu = 'n'; 
+                            printf("Voltando para o Menu Principal...\n");
+                            continuar_no_submenu = 'n'; // Sai do loop do cardápio
                             break;
                         default:
-                            printf("Opção de Cardápio Inválida. Tente novamente.\n");
+                            printf("Opção de Cardápio Inválida. Por favor, tente de novo.\n");
                     }
                 }
                 break; 
             
-            case 2: // Visualizar Carrinho
-                printf("\n--- Carrinho de Compras ---\n");
-                if (num_itens_carrinho == 0) {
-                    printf("Não foi selecionado nenhum item do cardápio.\n");
+            case 2: // Ver meu Carrinho
+                printf("\n--- Seu Carrinho de Compras ---\n");
+                if (total_de_itens_no_carrinho == 0) { // Se o carrinho estiver vazio
+                    printf("Você ainda não escolheu nenhum item do cardápio.\n");
                 } else {
-                    printf("Itens no seu carrinho:\n");
-                    exibir_carrinho_detalhes(false);
+                    printf("Os itens no seu carrinho são:\n");
+                    mostrar_itens(meu_carrinho, total_de_itens_no_carrinho); // Mostra os itens do carrinho
 
-                    float subtotal_carrinho = calcular_subtotal_carrinho();
-                    float valor_com_servico_carrinho = subtotal_carrinho + TAXA_SERVICO;
-                    float valor_desconto_carrinho = 0.0;
-                    float valor_final_carrinho = valor_com_servico_carrinho;
+                    float subtotal_carrinho_atual = 0.0;
+                    for (int i = 0; i < total_de_itens_no_carrinho; i++) { // Valor sem taxa
+                        subtotal_carrinho_atual += meu_carrinho[i].preco_total_do_item;
+                    }
+
+                    float valor_com_servico_carrinho_atual = subtotal_carrinho_atual + TAXA_DE_ENTREGA;
+                    float valor_desconto_carrinho_atual = 0.0; // Começa com zero
+                    float valor_final_carrinho_atual = valor_com_servico_carrinho_atual; // Começa com o valor sem desconto
                     
-                    printf("\nSubtotal dos produtos: R$ %.2f\n", subtotal_carrinho);
-                    printf("Taxa de Serviço: R$ %.2f\n", TAXA_SERVICO);
+                    printf("\nPreço total dos produtos: R$ %.2f\n", subtotal_carrinho_atual);
+                    printf("Taxa de Entrega: R$ %.2f\n", TAXA_DE_ENTREGA);
 
-                    if (subtotal_carrinho > VALOR_DESCONTO_MINIMO) {
-                        valor_desconto_carrinho = subtotal_carrinho * PORCENTAGEM_DESCONTO;
-                        valor_final_carrinho = valor_com_servico_carrinho - valor_desconto_carrinho;
-                        printf("DESCONTO de 20%% aplicado! (R$ %.2f)\n", valor_desconto_carrinho);
+                    // Mensagem de desconto
+                    if (subtotal_carrinho_atual < VALOR_PRA_TER_DESCONTO) {
+                        printf("Adicione mais R$ %.2f em produtos para ganhar 10%% de desconto!\n", VALOR_PRA_TER_DESCONTO - subtotal_carrinho_atual);
+                    }
+
+                    // Verifica se o subtotal é maior que o valor para ter desconto
+                    if (subtotal_carrinho_atual > VALOR_PRA_TER_DESCONTO) {
+                        valor_desconto_carrinho_atual = subtotal_carrinho_atual * PORCENTAGEM_DO_DESCONTO;
+                        valor_final_carrinho_atual = valor_com_servico_carrinho_atual - valor_desconto_carrinho_atual;
+                        printf("Você ganhou um DESCONTO de 10%%! (Economia de R$ %.2f)\n", valor_desconto_carrinho_atual);
                     }
                     
-                    printf("Total a Pagar (incl. serviço e desconto): R$ %.2f\n", valor_final_carrinho);
+                    printf("Total a Pagar (com taxa e desconto se tiver): R$ %.2f\n", valor_final_carrinho_atual);
 
-                    printf("\nOpções do Carrinho:\n");
-                    printf("1 - Limpar Carrinho (Deletar todos os itens)\n");
-                    printf("2 - Finalizar Compra\n");
-                    printf("3 - Voltar ao Menu Principal\n");
+                    printf("\nComo deseja prosseguir?\n");
+                    printf("1 - Limpar o carrinho\n");
+                    printf("2 - Prosseguir com a compra\n");
+                    printf("3 - Voltar para o menu principal\n");
                     printf("-----------------------------------\n");
                     printf("Escolha uma opção: ");
-                    scanf("%d", &op_carrinho);
-                    limpar_buffer();
+                    scanf("%d", &escolha_carrinho);
 
-                    switch(op_carrinho){
+                    switch(escolha_carrinho){
                         case 1: // Limpar Carrinho
-                            limpar_carrinho_completo();
+                            total_de_itens_no_carrinho = 0; // Coloca o contador de itens no carrinho pra zero
+                            printf("Seu carrinho está vazio agora.\n");
                             break;
                         case 2: // Finalizar Compra
-                            if (num_itens_carrinho == 0) {
-                                printf("Carrinho vazio! Adicione itens antes de finalizar a compra.\n");
+                            if (total_de_itens_no_carrinho == 0) {
+                                printf("Seu carrinho está vazio! Adicione itens antes de fechar a compra.\n");
                             } else {
-                                printf("\nCompra finalizada com sucesso! Seu pedido foi confirmado.\n");
-                                pedido_confirmado = true;
-                                
-                                // --- CORREÇÃO APLICADA AQUI ---
-                                // 1. Resetar o contador de itens do pedido final antes de copiar
-                                num_itens_pedido_final = 0; 
-                                // 2. Copiar CADA item do carrinho para o pedido_final
-                                for(int i = 0; i < num_itens_carrinho; i++){
-                                    pedido_final[i] = carrinho[i]; // Copia a struct completa
-                                    num_itens_pedido_final++; // Incrementa para cada item copiado
-                                }
-                                // 3. Armazenar os valores calculados no momento da confirmação
-                                pedido_final_subtotal = subtotal_carrinho;
-                                pedido_final_servico = TAXA_SERVICO;
-                                pedido_final_desconto = valor_desconto_carrinho;
-                                pedido_final_total = valor_final_carrinho;
+                                printf("\n--- Escolha a Forma de Pagamento ---\n");
+                                printf("1 - Dinheiro\n");
+                                printf("2 - Cartão de Crédito\n");
+                                printf("3 - Pix\n");
+                                printf("------------------------------------\n");
+                                printf("Escolha uma opção de pagamento: ");
+                                scanf("%d", &escolha_forma_pagamento);
 
-                                // Após a compra, limpamos o carrinho atual
-                                limpar_carrinho_completo(); 
+                                switch(escolha_forma_pagamento){
+                                    case 1:
+                                        strcpy(nome_forma_pagamento, "Dinheiro");
+                                        break;
+                                    case 2:
+                                        strcpy(nome_forma_pagamento, "Cartão de Crédito");
+                                        break;
+                                    case 3:
+                                        strcpy(nome_forma_pagamento, "Pix");
+                                        break;
+                                    default:
+                                        printf("Opção de pagamento inválida. Voltando ao carrinho.\n");
+                                        // Não finaliza a compra se a opção de pagamento for inválida
+                                        continue; 
+                                }
+
+                                printf("\nParabéns! Sua compra foi finalizada com sucesso!\n");
+                                printf("--- NOTA FISCAL SIMPLES ---\n");
+                                printf("King Burguers - Seu Lanche na Hora!\n");
+                                printf("-----------------------------------\n");
+                                printf("Itens do Pedido:\n");
+                                mostrar_itens(meu_carrinho, total_de_itens_no_carrinho); // Mostra os itens do pedido
+                                printf("\nSubtotal dos produtos: R$ %.2f\n", subtotal_carrinho_atual);
+                                printf("Taxa de Entrega: R$ %.2f\n", TAXA_DE_ENTREGA);
+                                if (valor_desconto_carrinho_atual > 0) {
+                                    printf("Desconto Aplicado (10%%): -R$ %.2f\n", valor_desconto_carrinho_atual);
+                                }
+                                printf("-----------------------------------\n");
+                                printf("Total Final: R$ %.2f\n", valor_final_carrinho_atual);
+                                printf("Forma de Pagamento: %s\n", nome_forma_pagamento);
+                                printf("-----------------------------------\n");
+                                printf("Agradecemos a preferência! Volte sempre!\n");
+                                
+                                total_de_itens_no_carrinho = 0; // Esvazia o carrinho após a compra
                             }
                             break;
                         case 3: // Voltar ao Menu Principal
-                            printf("Voltando ao Menu Principal...\n");
+                            printf("Voltando para o Menu Principal...\n");
                             break;
                         default:
-                            printf("Opção Inválida. Tente novamente.\n");
+                            printf("Opção Inválida. Por favor, tente de novo.\n");
                             break;
                     }
                 }
                 break;
 
-            case 3: // Visualizar Pedido
-                printf("\n--- Resumo do Pedido ---\n");
-                // Verificar se o pedido foi confirmado E se há itens para exibir no pedido final
-                if (!pedido_confirmado || num_itens_pedido_final == 0) { 
-                    printf("Nenhum pedido foi confirmado ainda ou o pedido está vazio. Por favor, finalize sua compra no Carrinho.\n");
-                } else {
-                    printf("Seu último pedido confirmado:\n");
-                    exibir_carrinho_detalhes(true); // Exibe os itens do pedido final
-
-                    printf("\nValor dos Produtos: R$ %.2f\n", pedido_final_subtotal);
-                    printf("Serviço: R$ %.2f\n", pedido_final_servico);
-                    
-                    if (pedido_final_desconto > 0) {
-                        printf("Desconto Aplicado (20%%): -R$ %.2f\n", pedido_final_desconto);
-                    }
-                    printf("-----------------------------------\n");
-                    printf("Total Final do Pedido: R$ %.2f\n", pedido_final_total);
-                    printf("Agradecemos a preferência!\n");
-                }
-                printf("\nVoltando ao Menu Principal...\n");
+            case 3:
+                printf("Fechando o sistema King Burguers. Obrigado pela sua visita!\n");
+                continuar_no_menu_principal = 'n';
                 break;
-
-            case 4: // Fechar sistema
-                printf("Fechando sistema King Burguers. Obrigado pela sua visita!\n");
-                c1 = 'n';
-                break;
-            default:
-                printf("Opção Inválida. Por favor, escolha uma opção entre 1 e 4.\n");
+            default: // Opção não existente
+                printf("Opção Inválida. Por favor, escolha um número de 1 a 3.\n");
                 break;
         }
     }
-    return 0; 
-}
+    return 0;
